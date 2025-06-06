@@ -11,7 +11,7 @@ using namespace std;
 void Log(string tag, string s)
 {
 #ifdef _DEBUG
-    cout << "[" << tag << "]" << s << endl;
+    cout << "[" << tag << "]" << s << endl:
 #endif
 }
 template<class T>
