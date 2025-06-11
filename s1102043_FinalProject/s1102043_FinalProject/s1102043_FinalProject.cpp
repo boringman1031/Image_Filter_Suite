@@ -823,7 +823,7 @@ public:
 
     void Mosaic_Style_Filter(int blocksize=10)//馬賽克濾鏡
     {
-        Log(" bitmap", "encode");
+        Log("Fliter", "Use MosaicStyle Fliter!!");
         for (int i = 0; i < 3; i++)
         {
             for (int y = 0; y < H; y += blocksize)
@@ -839,7 +839,26 @@ public:
                             int xx = x + dx;
                             int yy = y + dy;
 
+                            if (yy < H && xx < W)
+                            {
+                                sum += A[i][yy][xx];
+                                count++;
+                            }
+                        }
+                    }
+                    int avg = count > 0 ? sum / count : 0;
+                    for (int dy = 0; dy < blocksize; dy++)
+                    {
+                        for (int dx = 0; dx < blocksize; dx++)
+                        {
+                            int xx = x + dx;
+                            int yy = y + dy;
 
+                            if (yy < H && xx < W)
+                            {
+                                A[i][yy][xx] = avg;
+                            }
+                           
                         }
                     }
                 }
@@ -861,7 +880,7 @@ public:
 
         if (status == Gdiplus::Ok) {
             read("logo.bmp");
-            histogramEqualization();
+            Mosaic_Style_Filter(10);
             write("equalized.bmp");		
             return true;
         }
