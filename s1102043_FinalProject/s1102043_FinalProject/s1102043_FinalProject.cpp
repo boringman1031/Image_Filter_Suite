@@ -11,7 +11,7 @@ using namespace std;
 void Log(string tag, string s)
 {
 #ifdef _DEBUG
-    cout << "[" << tag << "]" << s << endl:
+    cout << "[" << tag << "]" << s << endl;
 #endif
 }
 template<class T>
@@ -807,6 +807,44 @@ public:
         datahiding_encode();
         datahiding_decode();
 
+    }
+
+    //--------------------Filter濾鏡------------------------//
+
+    void Comic_Style_Filter()//漫畫風濾鏡
+    {
+
+    }
+
+    void OilPainting_Style_Filter()//油畫風濾鏡
+    {
+
+    }
+
+    void Mosaic_Style_Filter(int blocksize=10)//馬賽克濾鏡
+    {
+        Log(" bitmap", "encode");
+        for (int i = 0; i < 3; i++)
+        {
+            for (int y = 0; y < H; y += blocksize)
+            {
+                for (int x = 0; x < W; x += blocksize)
+                {
+                    int sum = 0;
+                    int count = 0;
+                    for (int dy = 0; dy < blocksize; dy++)
+                    {
+                        for (int dx = 0; dx < blocksize; dx++)
+                        {
+                            int xx = x + dx;
+                            int yy = y + dy;
+
+
+                        }
+                    }
+                }
+            }
+        }
     }
     bool run()
     {
