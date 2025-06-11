@@ -813,6 +813,49 @@ public:
 
     void Comic_Style_Filter()//漫畫風濾鏡
     {
+        Log("Fliter", "Use  ComicStyle Fliter!!");
+        MATRIX<int> eage[3];
+        for (int i = 0; i < 3; i++)
+        {
+            eage[i] = A[i];
+        }
+        //邊緣偵測
+        int sobelKernel[3][3] = { {-1,0,1},{-2,0,2},{-1,0,1} };
+        MATRIX<int> mask;
+        mask.set(sobelKernel);
+        for (int i = 0; i < 3; i++)
+        {
+            eage[i] = A[i].conv(mask);
+            eage[i].interbound(0, 255);
+        }
+        //顏色量化
+        for (int i = 0; i < 3; i++)
+        {
+            for (int y = 0; y < H; y++)
+            {
+                for (int x = 0; x < W; x++)
+                {
+                    int v = A[i][y][x];
+                    A[i][y][x] = (v / 64) * 64;
+                }
+            }
+        }
+
+        //使用eage讓邊緣變黑線
+        for (int y = 0; y < H; y++)
+        {
+            for (int x = 0; x < W; x++)
+            {
+                int intentstify = (eage[0][y][x] + eage[1][y][x] + eage[2][y][x]) / 3;
+                if (intentstify < 100)
+                {
+                    eage[0][y][x] = eage[1][y][x] = eage[2][y][x] = 0;
+                }
+            }
+        }
+
+        updateImage();
+        write("Comic_Style_Image.bmp");
 
     }
 
@@ -864,6 +907,8 @@ public:
                 }
             }
         }
+        updateImage();
+        write("Mosaic_Style_Image.bmp");
     }
     bool run()
     {
@@ -880,8 +925,7 @@ public:
 
         if (status == Gdiplus::Ok) {
             read("logo.bmp");
-            Mosaic_Style_Filter(10);
-            write("equalized.bmp");		
+            Comic_Style_Filter();            
             return true;
         }
         else {
