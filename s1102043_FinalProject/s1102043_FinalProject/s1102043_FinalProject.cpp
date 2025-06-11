@@ -807,61 +807,107 @@ public:
         datahiding_encode();
         datahiding_decode();
 
-    }
+    }	
+
 
     //--------------------Filter濾鏡------------------------//
 
     void Comic_Style_Filter()//漫畫風濾鏡
     {
-        Log("Fliter", "Use  ComicStyle Fliter!!");
-        MATRIX<int> eage[3];
-        for (int i = 0; i < 3; i++)
-        {
-            eage[i] = A[i];
-        }
-        //邊緣偵測
-        int sobelKernel[3][3] = { {-1,0,1},{-2,0,2},{-1,0,1} };
-        MATRIX<int> mask;
-        mask.set(sobelKernel);
-        for (int i = 0; i < 3; i++)
-        {
-            eage[i] = A[i].conv(mask);
-            eage[i].interbound(0, 255);
-        }
-        //顏色量化
-        for (int i = 0; i < 3; i++)
-        {
-            for (int y = 0; y < H; y++)
-            {
-                for (int x = 0; x < W; x++)
-                {
-                    int v = A[i][y][x];
-                    A[i][y][x] = (v / 64) * 64;
-                }
-            }
-        }
+        Log("Filter", "Use ComicStyle Filter");
 
-        //使用eage讓邊緣變黑線
+        // 1. 邊緣偵測
+        sobel();
+
+		// 2. 將 RGB 通道的值調整為 64 的倍數
+        for (int i = 0; i < 3; i++)
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                    A[i][y][x] = (A[i][y][x] / 64) * 64;
+       
+        // 3. 疊黑線
         for (int y = 0; y < H; y++)
-        {
             for (int x = 0; x < W; x++)
             {
-                int intentstify = (eage[0][y][x] + eage[1][y][x] + eage[2][y][x]) / 3;
-                if (intentstify < 100)
+                int edge = (A[0][y][x] + A[1][y][x] + A[2][y][x]) / 3;
+                if (edge < 100)
+                    A[0][y][x] = A[1][y][x] = A[2][y][x] = 0;
+            }
+
+        updateImage();
+        write("Comic.bmp");
+
+    }
+
+	void OilPainting_Style_Filter(int radius = 3, int intensity = 20)//油畫風格濾鏡
+    {
+        Log("Filter", "Use OilPainting Style Filter!!");
+
+        MATRIX<int> B[3];
+        for (int i = 0; i < 3; i++)
+        {
+            B[i] = A[i]; // 備份原始影像
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            for (int y = radius; y < H - radius; y++)
+            {
+                for (int x = radius; x < W - radius; x++)
                 {
-                    eage[0][y][x] = eage[1][y][x] = eage[2][y][x] = 0;
+                    // 統計鄰域內各強度級別的出現次數和總和
+                    int histogram[256] = { 0 };      // 記錄每個強度值出現次數
+                    int intensitySum[256] = { 0 };   // 記錄每個強度級別的RGB總和
+                    int intensityCount[256] = { 0 }; // 記錄每個強度級別的像素數量
+
+                    // 掃描鄰域
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        for (int dx = -radius; dx <= radius; dx++)
+                        {
+                            int ny = y + dy;
+                            int nx = x + dx;
+
+                            if (ny >= 0 && ny < H && nx >= 0 && nx < W)
+                            {
+                                // 計算該像素的強度級別（簡化為intensity個級別）
+                                int pixelValue = B[i][ny][nx];
+                                int intensityLevel = (pixelValue * intensity) / 256;
+
+                                histogram[intensityLevel]++;
+                                intensitySum[intensityLevel] += pixelValue;
+                                intensityCount[intensityLevel]++;
+                            }
+                        }
+                    }
+
+                    // 找出出現次數最多的強度級別
+                    int maxCount = 0;
+                    int dominantLevel = 0;
+                    for (int level = 0; level < intensity; level++)
+                    {
+                        if (histogram[level] > maxCount)
+                        {
+                            maxCount = histogram[level];
+                            dominantLevel = level;
+                        }
+                    }
+
+                    // 使用該強度級別的平均值作為輸出
+                    if (intensityCount[dominantLevel] > 0)
+                    {
+                        A[i][y][x] = intensitySum[dominantLevel] / intensityCount[dominantLevel];
+                    }
+                    else
+                    {
+                        A[i][y][x] = B[i][y][x]; // 如果沒有找到，保持原值
+                    }
                 }
             }
         }
 
         updateImage();
-        write("Comic_Style_Image.bmp");
-
-    }
-
-    void OilPainting_Style_Filter()//油畫風濾鏡
-    {
-
+        write("oilpainting.bmp");
     }
 
     void Mosaic_Style_Filter(int blocksize=10)//馬賽克濾鏡
@@ -908,11 +954,57 @@ public:
             }
         }
         updateImage();
-        write("Mosaic_Style_Image.bmp");
+        write("Mosaic.bmp");
     }
+
+	void filterMenu()//濾鏡選單
+    {
+        cout << "==========================" << endl;
+        cout << "歡迎使用濾鏡走廊" << endl;
+        cout << "1. Comic Style (漫畫風)" << endl;
+        cout << "2. Oil Painting Style (油畫化)" << endl;
+        cout << "3. Mosaic Style (馬賽克)" << endl;
+        cout << "4. Histogram Equalization (直方圖等化)" << endl;
+        cout << "0. Exit(離開程式)" << endl;
+        cout << "==========================" << endl;
+
+        int choice;
+        cout << "今天想使用的濾鏡是: ";
+        cin >> choice;
+
+        if (!read("IMG_1188.bmp")) {
+            cout << "Failed to read image!" << endl;
+            return;
+        }
+
+        switch (choice)
+        {
+        case 1:
+            Comic_Style_Filter();
+            break;
+        case 2:
+            OilPainting_Style_Filter();
+            break;
+        case 3:
+            Mosaic_Style_Filter();
+            break;
+        case 4:
+            histogramEqualization();
+            break;
+        case 0:
+            cout << "下次見..." << endl;
+            return;
+        default:
+            cout << "無效的選擇!" << endl;
+            break;
+        }
+
+        cout << "套用濾鏡成功!!" << endl;
+    }
+
     bool run()
     {
-        /*if (status == Gdiplus::Ok) {
+        if (status == Gdiplus::Ok) {
              pixelProcess();
              geometryProcess();
              convProcess();
@@ -921,22 +1013,14 @@ public:
              return true;
          }
          else
-             return false;*/
+             return false;
 
-        if (status == Gdiplus::Ok) {
-            read("logo.bmp");
-            Comic_Style_Filter();            
-            return true;
-        }
-        else {
-            return false;
-        }
     }
 
 };
 
 int main() {
     APP app;
-    app.run();
-	return 0;//0代表程式成功結束，1代表程式異常結束
+    app.filterMenu();
+    return 0;
 }
